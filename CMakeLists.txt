@@ -10,6 +10,50 @@ find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(sensor_msgs REQUIRED)
 
+# Sensor driver library
+add_library(sen0140_sensors
+  src/vcm5883l.cpp
+)
+
+target_include_directories(sen0140_sensors
+  PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:include>
+)
+
+
+# ROS 2 node
+add_executable(sen0140_node
+  src/sen0140_node.cpp
+)
+
+target_link_libraries(sen0140_node
+  sen0140_sensors
+)
+
+ament_target_dependencies(sen0140_node
+  rclcpp
+  sensor_msgs
+)
+
+
+# Install executable/library
+install(
+  TARGETS
+    sen0140_sensors
+    sen0140_node
+  ARCHIVE DESTINATION lib
+  LIBRARY DESTINATION lib
+  RUNTIME DESTINATION lib/${PROJECT_NAME}
+)
+
+
+# Install public headers
+install(
+  DIRECTORY include/
+  DESTINATION include
+)
+
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   # the following line skips the linter which checks for copyrights
