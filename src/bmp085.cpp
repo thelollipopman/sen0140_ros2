@@ -18,7 +18,7 @@ Bmp085::Bmp085(
 : fd_(-1),
   oversampling_(0)
 {
-    fd_ = open(i2c_device.c_str(), O_RDWR);
+    fd_ = ::open(i2c_device.c_str(), O_RDWR);
 
     if (fd_ < 0) {
         throw std::runtime_error(
@@ -26,7 +26,7 @@ Bmp085::Bmp085(
     }
 
     if (ioctl(fd_, I2C_SLAVE, address) < 0) {
-        close(fd_);
+        ::close(fd_);
         fd_ = -1;
 
         throw std::runtime_error(
@@ -81,7 +81,7 @@ void Bmp085::read_registers(
     std::size_t length)
 {
     const ssize_t bytes_written =
-        write(fd_, &start_reg, 1);
+        ::write(fd_, &start_reg, 1);
 
     if (bytes_written != 1) {
         throw std::runtime_error(
@@ -89,7 +89,7 @@ void Bmp085::read_registers(
     }
 
     const ssize_t bytes_read =
-        read(fd_, buffer, length);
+        ::read(fd_, buffer, length);
 
     if (bytes_read !=
         static_cast<ssize_t>(length))
