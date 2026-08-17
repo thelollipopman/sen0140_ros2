@@ -13,7 +13,7 @@ sen0140_node:
 
     # ADXL345 accelerometer
     accel:
-      address: 
+      address: 83 # 0x53
       odr: 200
 
       # 0 = +/-2 g
@@ -24,7 +24,7 @@ sen0140_node:
 
     # ITG-3200 gyroscope
     gyro:
-      address: 
+      address: 104 # 0x68
       rate: 200
 
       # DLPF configuration:
@@ -42,7 +42,7 @@ sen0140_node:
     # -------------------------------------------------
 
     mag:
-      address:
+      address: 12 # 0x0C
       frame_id: "imu_link"
 
       # VCM5883L output data rate
@@ -53,7 +53,7 @@ sen0140_node:
     # -------------------------------------------------
 
     baro:
-      address:
+      address: 119 # 0x77
       frame_id: "imu_link"
 
       # ROS polling / publication rate
