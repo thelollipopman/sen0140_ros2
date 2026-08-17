@@ -23,33 +23,47 @@ public:
     : Node("sen0140_node")
     {
         declare_parameter<std::string>("i2c_device", "/dev/i2c-1");
+        declare_parameter<int>("mag.address", 0x0D);
         declare_parameter<int>("mag.odr", 50);
         declare_parameter<std::string>("mag.frame_id", "imu_link");
         declare_parameter<int>("baro.temp_oversampling", 2);
         declare_parameter<int>("baro.pressure_oversampling", 5);
         declare_parameter<double>("baro.rate", 10.0);
         declare_parameter<std::string>("baro.frame_id", "imu_link");
+        declare_parameter<int>("accel.address", 0x53);
         declare_parameter<int>("accel.odr", 200);
         declare_parameter<int>("accel.range", 3);
+        declare_parameter<int>("baro.address", 0x76);
+        declare_parameter<int>("gyro.address", 0x68);
         declare_parameter<int>("gyro.rate", 200);
         declare_parameter<int>("gyro.dlpf", 2);
         declare_parameter<std::string>("imu.frame_id","imu_link");
+        
+
+        const auto i2c_device = get_parameter("i2c_device").as_string();
+
 
         // Magnetometer VCM5883L publisher
-        const auto i2c_device = get_parameter("i2c_device").as_string();
-        const int mag_odr = get_parameter("mag.odr").as_int();
+
+        const int mag_address =
+            get_parameter("mag.address").as_int();
+
+        const int mag_odr = 
+            get_parameter("mag.odr").as_int();
 
         mag_frame_id_ = get_parameter("mag.frame_id").as_string();
 
         magnetometer_ =
             std::make_unique<sen0140_ros2::Vcm5883l>(
-                i2c_device);
+                i2c_device, static_cast<uint8_t>(mag_address));
 
         magnetometer_->initialize(mag_odr);
+
         mag_publisher_ =
             create_publisher<sensor_msgs::msg::MagneticField>(
                 "magnetic_field",
                 rclcpp::SensorDataQoS());
+
         const auto mag_period =
             std::chrono::duration<double>(1.0 / mag_odr);
 
@@ -58,6 +72,10 @@ public:
             std::bind(&Sen0140Node::read_magnetometer, this));
 
         // Barometer BMP280 publisher
+
+        const int baro_address =
+            get_parameter("baro.address").as_int();
+
         const int baro_temp_oversampling =
             get_parameter(
                 "baro.temp_oversampling").as_int();
@@ -90,7 +108,7 @@ public:
         barometer_ =
             std::make_unique<
                 sen0140_ros2::Bmp280>(
-                    i2c_device);
+                    i2c_device, static_cast<uint8_t>(baro_address));
 
         barometer_->initialize(
             static_cast<
@@ -122,11 +140,17 @@ public:
                     this));
         
         // Accelerometer ADXL345 + gyroscope ITG-3200
+        const int accel_address =
+            get_parameter("accel.address").as_int();
+
         const int accel_odr =
             get_parameter("accel.odr").as_int();
 
         const int accel_range =
             get_parameter("accel.range").as_int();
+
+        const int gyro_address =
+            get_parameter("gyro.address").as_int();
 
         const int gyro_rate =
             get_parameter("gyro.rate").as_int();
@@ -149,11 +173,11 @@ public:
 
         accelerometer_ =
             std::make_unique<sen0140_ros2::Adxl345>(
-                i2c_device);
+                i2c_device, static_cast<uint8_t>(accel_address));
 
         gyroscope_ =
             std::make_unique<sen0140_ros2::Itg3200>(
-                i2c_device);
+                i2c_device, static_cast<uint8_t>(gyro_address));
 
         accelerometer_->initialize(
             accel_odr,
