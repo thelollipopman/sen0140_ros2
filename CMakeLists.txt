@@ -13,7 +13,7 @@ find_package(sensor_msgs REQUIRED)
 # Sensor driver library
 add_library(sen0140_sensors
   src/vcm5883l.cpp
-  src/bmp085.cpp
+  src/bmp280.cpp
 )
 
 target_include_directories(sen0140_sensors
