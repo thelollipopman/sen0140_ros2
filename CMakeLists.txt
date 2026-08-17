@@ -14,6 +14,8 @@ find_package(sensor_msgs REQUIRED)
 add_library(sen0140_sensors
   src/vcm5883l.cpp
   src/bmp280.cpp
+  src/adxl345.cpp
+  src/itg3200.cpp
 )
 
 target_include_directories(sen0140_sensors
