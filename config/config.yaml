@@ -17,11 +17,6 @@ sen0140_node:
     accel:
       address: 83 # 0x53                                # I2C address in decimal form
       output_data_rate: 200.0                           # Output data rate: should be >= imu publish_rate
-
-      # 0 = +/-2 g
-      # 1 = +/-4 g
-      # 2 = +/-8 g
-      # 3 = +/-16 g
       range: 3
 
     # ITG-3200 gyroscope

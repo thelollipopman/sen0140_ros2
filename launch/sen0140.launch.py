@@ -38,7 +38,7 @@ def generate_launch_description():
     return LaunchDescription([
         DeclareLaunchArgument(
             "config_file",
-            default_value="sen0140.yaml",
+            default_value="config.yaml",
             description=(
                 "Parameter YAML file. Relative paths are "
                 "resolved against the package config directory."

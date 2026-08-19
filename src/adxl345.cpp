@@ -151,8 +151,6 @@ void Adxl345::configure(
 {
     uint8_t rate_code;
 
-    uint8_t rate_code;
-
     if (odr_hz == 3200.0) {
         rate_code = 0x0F;
     }

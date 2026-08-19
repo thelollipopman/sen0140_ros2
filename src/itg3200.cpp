@@ -131,7 +131,7 @@ void Itg3200::read_registers(
 
 
 void Itg3200::initialize(
-    int sample_rate_hz,
+    double sample_rate_hz,
     uint8_t dlpf_cfg)
 {
     /*
@@ -159,7 +159,7 @@ void Itg3200::initialize(
 
 
 void Itg3200::configure(
-    int sample_rate_hz,
+    double sample_rate_hz,
     uint8_t dlpf_cfg)
 {
     if (dlpf_cfg > 6) {

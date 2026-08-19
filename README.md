@@ -1,7 +1,9 @@
-# DFRobot SEN0140 ROS2
+# DFRobot SEN0140 ROS2 package
 This is a ROS2 package for the DFRobot SEN0140 10 DOF Mems IMU Sensor. More info about the sensor can be found on the [DFRobot wiki](https://wiki.dfrobot.com/sen0140/) or in the [datasheets](datasheets/).
 
+<div align="center">
 ![SEN0140 picture](./assets/sen0140.jpg)
+</div>
 
 ## Usage
 1. Clone the repo into the `src` directory of your ROS workspace:
@@ -10,7 +12,7 @@ cd ~/ros2_ws/src
 git clone https://github.com/thelollipopman/sen0140_ros2.git
 ```
 
-2. Build the package from your ROS workspace:
+2. Build the package from your ROS workspace:   
 ```
 cd ~/ros2_ws
 colcon build --symlink-install --packages-select sen0140_ros2
@@ -22,13 +24,13 @@ cd ~/ros2_ws
 source install/setup.bash
 ```
 
-3. Change the default parameters in the [`config.yaml`](config/config.yaml) as desired. See [Configure] for more info
+3. Change the default parameters in the [`config.yaml`](config/config.yaml) as desired. See [Configure](#configure) for more info
 
 4. Launch the ROS node:
 ```
 ros2 launch sen0140_ros2 sen0140.launch.py config:=config.yaml
 ```
-The `config` parameter accepts relative files paths from the `config` directory or absolute file paths.
+The `config` parameter accepts relative files paths from the [config](config/) directory or absolute file paths.
 
 
 ## ROS2 topics

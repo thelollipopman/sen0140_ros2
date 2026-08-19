@@ -23,21 +23,29 @@ public:
     : Node("sen0140_node")
     {
         declare_parameter<std::string>("i2c_device", "/dev/i2c-1");
+
         declare_parameter<int>("mag.address", 0x0D);
-        declare_parameter<int>("mag.odr", 50);
         declare_parameter<std::string>("mag.frame_id", "imu_link");
-        declare_parameter<int>("baro.temp_oversampling", 2);
-        declare_parameter<int>("baro.pressure_oversampling", 5);
-        declare_parameter<double>("baro.rate", 10.0);
+        declare_parameter<double>("mag.publish_rate", 50.0);
+        declare_parameter<double>("mag.output_data_rate", 50.0);
+        
+        declare_parameter<int>("baro.address", 0x77);
         declare_parameter<std::string>("baro.frame_id", "imu_link");
-        declare_parameter<int>("accel.address", 0x53);
-        declare_parameter<int>("accel.odr", 200);
-        declare_parameter<int>("accel.range", 3);
-        declare_parameter<int>("baro.address", 0x76);
-        declare_parameter<int>("gyro.address", 0x68);
-        declare_parameter<int>("gyro.rate", 200);
-        declare_parameter<int>("gyro.dlpf", 2);
+        declare_parameter<int>("baro.oversampling_setting", 4);
+        declare_parameter<double>("baro.publish_rate", 10.0);
+        
         declare_parameter<std::string>("imu.frame_id","imu_link");
+        declare_parameter<double>("imu.publish_rate", 100.0);
+
+
+        declare_parameter<int>("accel.address", 0x53);
+        declare_parameter<double>("accel.output_data_rate", 200.0);
+        declare_parameter<int>("accel.range", 3);
+
+        declare_parameter<int>("gyro.address", 0x68);
+        declare_parameter<double>("gyro.output_data_rate", 200.0);
+        declare_parameter<int>("gyro.dlpf_cfg", 2);
+        
         
 
         const auto i2c_device = get_parameter("i2c_device").as_string();
@@ -48,10 +56,10 @@ public:
         const int mag_address =
             get_parameter("mag.address").as_int();
 
-        const int mag_output_data_rate = 
-            get_parameter("mag.output_data_rate").as_int();
+        const double mag_output_data_rate = 
+            get_parameter("mag.output_data_rate").as_double();
 
-        const int mag_publish_rate = 
+        const double mag_publish_rate = 
             get_parameter("mag.publish_rate").as_double();
 
         mag_frame_id_ = get_parameter("mag.frame_id").as_string();
@@ -60,7 +68,7 @@ public:
             std::make_unique<sen0140_ros2::Vcm5883l>(
                 i2c_device, static_cast<uint8_t>(mag_address));
 
-        magnetometer_->initialize(mag_odr);
+        magnetometer_->initialize(mag_output_data_rate);
 
         mag_publisher_ =
             create_publisher<sensor_msgs::msg::MagneticField>(
@@ -90,7 +98,7 @@ public:
                 "baro.oversampling_setting must be between 0 and 4");
         }
 
-        const double baro_publish_rate_ =
+        const double baro_publish_rate =
             get_parameter("baro.publish_rate").as_double();
         
         if (baro_publish_rate <= 0.0) {
@@ -141,7 +149,7 @@ public:
         const int accel_address =
             get_parameter("accel.address").as_int();
 
-        const int accel_output_data_rate =
+        const double accel_output_data_rate =
             get_parameter("accel.output_data_rate").as_double();
 
         const int accel_range =
@@ -150,26 +158,26 @@ public:
         const int gyro_address =
             get_parameter("gyro.address").as_int();
 
-        const int gyro_output_data_rate =
+        const double gyro_output_data_rate =
             get_parameter("gyro.output_data_rate").as_double();
 
-        const int gyro_dlpf =
-            get_parameter("gyro.dlpf").as_int();
+        const int gyro_dlpf_cfg =
+            get_parameter("gyro.dlpf_cfg").as_int();
 
         imu_frame_id_ =
             get_parameter("imu.frame_id").as_string();
         
-        const int imu_publish_rate = 
-            get_parameter("imu.publish_rate").as_int();
+        const double imu_publish_rate = 
+            get_parameter("imu.publish_rate").as_double();
 
         if (accel_range < 0 || accel_range > 3) {
             throw std::invalid_argument(
                 "accel.range must be between 0 and 3");
         }
 
-        if (gyro_dlpf < 0 || gyro_dlpf > 6) {
+        if (gyro_dlpf_cfg < 0 || gyro_dlpf_cfg > 6) {
             throw std::invalid_argument(
-                "gyro.dlpf must be between 0 and 6");
+                "gyro.dlpf_cfg must be between 0 and 6");
         }
 
         accelerometer_ =
@@ -188,7 +196,7 @@ public:
         gyroscope_->initialize(
             gyro_output_data_rate,
             static_cast<uint8_t>(
-                gyro_dlpf));
+                gyro_dlpf_cfg));
 
         imu_publisher_ =
             create_publisher<sensor_msgs::msg::Imu>(
