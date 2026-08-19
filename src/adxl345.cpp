@@ -128,7 +128,7 @@ void Adxl345::read_registers(
 
 
 void Adxl345::initialize(
-    int odr_hz,
+    double odr_hz,
     AccelRange range)
 {
     const uint8_t device_id =
@@ -146,47 +146,64 @@ void Adxl345::initialize(
 
 
 void Adxl345::configure(
-    int odr_hz,
+    double odr_hz,
     AccelRange range)
 {
     uint8_t rate_code;
 
-    switch (odr_hz) {
-        case 25:
-            rate_code = 0x08;
-            break;
+    uint8_t rate_code;
 
-        case 50:
-            rate_code = 0x09;
-            break;
-
-        case 100:
-            rate_code = 0x0A;
-            break;
-
-        case 200:
-            rate_code = 0x0B;
-            break;
-
-        case 400:
-            rate_code = 0x0C;
-            break;
-
-        case 800:
-            rate_code = 0x0D;
-            break;
-
-        case 1600:
-            rate_code = 0x0E;
-            break;
-
-        case 3200:
-            rate_code = 0x0F;
-            break;
-
-        default:
-            throw std::invalid_argument(
-                "Unsupported ADXL345 output data rate");
+    if (odr_hz == 3200.0) {
+        rate_code = 0x0F;
+    }
+    else if (odr_hz == 1600.0) {
+        rate_code = 0x0E;
+    }
+    else if (odr_hz == 800.0) {
+        rate_code = 0x0D;
+    }
+    else if (odr_hz == 400.0) {
+        rate_code = 0x0C;
+    }
+    else if (odr_hz == 200.0) {
+        rate_code = 0x0B;
+    }
+    else if (odr_hz == 100.0) {
+        rate_code = 0x0A;
+    }
+    else if (odr_hz == 50.0) {
+        rate_code = 0x09;
+    }
+    else if (odr_hz == 25.0) {
+        rate_code = 0x08;
+    }
+    else if (odr_hz == 12.5) {
+        rate_code = 0x07;
+    }
+    else if (odr_hz == 6.25) {
+        rate_code = 0x06;
+    }
+    else if (odr_hz == 3.13) {
+        rate_code = 0x05;
+    }
+    else if (odr_hz == 1.56) {
+        rate_code = 0x04;
+    }
+    else if (odr_hz == 0.78) {
+        rate_code = 0x03;
+    }
+    else if (odr_hz == 0.39) {
+        rate_code = 0x02;
+    }
+    else if (odr_hz == 0.20) {
+        rate_code = 0x01;
+    }
+    else if (odr_hz == 0.10) {
+        rate_code = 0x00;
+    }
+    else {
+        throw std::invalid_argument(
+            "Unsupported ADXL345 output data rate");
     }
 
     // Place device in standby while configuring.

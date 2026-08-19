@@ -48,8 +48,11 @@ public:
         const int mag_address =
             get_parameter("mag.address").as_int();
 
-        const int mag_odr = 
-            get_parameter("mag.odr").as_int();
+        const int mag_output_data_rate = 
+            get_parameter("mag.output_data_rate").as_int();
+
+        const int mag_publish_rate = 
+            get_parameter("mag.publish_rate").as_double();
 
         mag_frame_id_ = get_parameter("mag.frame_id").as_string();
 
@@ -65,7 +68,7 @@ public:
                 rclcpp::SensorDataQoS());
 
         const auto mag_period =
-            std::chrono::duration<double>(1.0 / mag_odr);
+            std::chrono::duration<double>(1.0 / mag_publish_rate);
 
         mag_timer_ = create_wall_timer(
             mag_period,
@@ -76,47 +79,40 @@ public:
         const int baro_address =
             get_parameter("baro.address").as_int();
 
-        const int baro_temp_oversampling =
+        const int baro_oversampling_setting =
             get_parameter(
-                "baro.temp_oversampling").as_int();
+                "baro.oversampling_setting").as_int();
 
-        const int baro_pressure_oversampling =
-            get_parameter(
-                "baro.pressure_oversampling").as_int();
+        if (baro_oversampling_setting < 0 ||
+            baro_oversampling_setting > 4)
+        {
+            throw std::invalid_argument(
+                "baro.oversampling_setting must be between 0 and 4");
+        }
 
-        baro_rate_ =
-            get_parameter("baro.rate").as_double();
+        const double baro_publish_rate_ =
+            get_parameter("baro.publish_rate").as_double();
+        
+        if (baro_publish_rate <= 0.0) {
+            throw std::invalid_argument(
+                "baro.publish_rate must be greater than 0");
+        }
 
         baro_frame_id_ =
             get_parameter(
                 "baro.frame_id").as_string();
 
-        if (baro_temp_oversampling < 0 ||
-            baro_temp_oversampling > 5 ||
-            baro_pressure_oversampling < 0 ||
-            baro_pressure_oversampling > 5)
-        {
-            throw std::invalid_argument(
-                "BMP280 oversampling must be between 0 and 5");
-        }
-
-        if (baro_rate_ <= 0.0) {
-            throw std::invalid_argument(
-                "baro.rate must be greater than 0");
-        }
-
         barometer_ =
             std::make_unique<
                 sen0140_ros2::Bmp280>(
-                    i2c_device, static_cast<uint8_t>(baro_address));
+                    i2c_device,
+                    static_cast<uint8_t>(
+                        baro_address));
 
         barometer_->initialize(
             static_cast<
-                sen0140_ros2::Oversampling>(
-                    baro_temp_oversampling),
-            static_cast<
-                sen0140_ros2::Oversampling>(
-                    baro_pressure_oversampling));
+                sen0140_ros2::OversamplingSetting>(
+                    baro_oversampling_setting));
 
         pressure_publisher_ =
             create_publisher<
@@ -130,21 +126,23 @@ public:
                     "temperature",
                     rclcpp::SensorDataQoS());
 
-        last_baro_start_ = now();
+        const auto baro_period =
+            std::chrono::duration<double>(
+                1.0 / baro_publish_rate);
 
         baro_timer_ =
             create_wall_timer(
-                5ms,
+                baro_period,
                 std::bind(
                     &Sen0140Node::read_barometer,
                     this));
         
-        // Accelerometer ADXL345 + gyroscope ITG-3200
+        // Accelerometer ADXL345 + gyroscope ITG-3200 publishers
         const int accel_address =
             get_parameter("accel.address").as_int();
 
-        const int accel_odr =
-            get_parameter("accel.odr").as_int();
+        const int accel_output_data_rate =
+            get_parameter("accel.output_data_rate").as_double();
 
         const int accel_range =
             get_parameter("accel.range").as_int();
@@ -152,14 +150,17 @@ public:
         const int gyro_address =
             get_parameter("gyro.address").as_int();
 
-        const int gyro_rate =
-            get_parameter("gyro.rate").as_int();
+        const int gyro_output_data_rate =
+            get_parameter("gyro.output_data_rate").as_double();
 
         const int gyro_dlpf =
             get_parameter("gyro.dlpf").as_int();
 
         imu_frame_id_ =
             get_parameter("imu.frame_id").as_string();
+        
+        const int imu_publish_rate = 
+            get_parameter("imu.publish_rate").as_int();
 
         if (accel_range < 0 || accel_range > 3) {
             throw std::invalid_argument(
@@ -180,12 +181,12 @@ public:
                 i2c_device, static_cast<uint8_t>(gyro_address));
 
         accelerometer_->initialize(
-            accel_odr,
+            accel_output_data_rate,
             static_cast<sen0140_ros2::AccelRange>(
                 accel_range));
 
         gyroscope_->initialize(
-            gyro_rate,
+            gyro_output_data_rate,
             static_cast<uint8_t>(
                 gyro_dlpf));
 
@@ -193,10 +194,13 @@ public:
             create_publisher<sensor_msgs::msg::Imu>(
                 "imu",
                 rclcpp::SensorDataQoS());
+        
+        const auto imu_period =
+            std::chrono::duration<double>(1.0 / imu_publish_rate);
 
         imu_timer_ =
             create_wall_timer(
-                1ms,
+                imu_period,
                 std::bind(
                     &Sen0140Node::read_imu,
                     this));
@@ -224,45 +228,34 @@ private:
     
     void read_barometer()
     {
-        if (!baro_measurement_pending_) {
-            const double elapsed =
-                (now() - last_baro_start_).seconds();
-
-            if (elapsed < 1.0 / baro_rate_) {
-                return;
-            }
-
-            barometer_->start_measurement();
-
-            last_baro_start_ = now();
-            baro_measurement_pending_ = true;
-
-            return;
-        }
-
-        if (barometer_->is_measuring()) {
-            return;
-        }
-
         const auto data =
-            barometer_->read_measurement();
-
-        baro_measurement_pending_ = false;
+            barometer_->read();
 
         const auto stamp = now();
 
         sensor_msgs::msg::FluidPressure pressure_msg;
+
         pressure_msg.header.stamp = stamp;
-        pressure_msg.header.frame_id = baro_frame_id_;
-        pressure_msg.fluid_pressure = data.pressure;
+        pressure_msg.header.frame_id =
+            baro_frame_id_;
+
+        pressure_msg.fluid_pressure =
+            data.pressure;
 
         sensor_msgs::msg::Temperature temperature_msg;
-        temperature_msg.header.stamp = stamp;
-        temperature_msg.header.frame_id = baro_frame_id_;
-        temperature_msg.temperature = data.temperature;
 
-        pressure_publisher_->publish(pressure_msg);
-        temperature_publisher_->publish(temperature_msg);
+        temperature_msg.header.stamp = stamp;
+        temperature_msg.header.frame_id =
+            baro_frame_id_;
+
+        temperature_msg.temperature =
+            data.temperature;
+
+        pressure_publisher_->publish(
+            pressure_msg);
+
+        temperature_publisher_->publish(
+            temperature_msg);
     }
 
     void read_imu()
@@ -343,12 +336,6 @@ private:
     rclcpp::TimerBase::SharedPtr baro_timer_;
 
     std::string baro_frame_id_;
-
-    bool baro_measurement_pending_ = false;
-
-    double baro_rate_;
-
-    rclcpp::Time last_baro_start_;
 
     // IMU: Accel + Gyro
     std::unique_ptr<

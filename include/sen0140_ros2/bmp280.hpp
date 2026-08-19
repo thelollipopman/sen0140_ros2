@@ -13,14 +13,13 @@ struct BarometerData
     double temperature;  // deg C
 };
 
-enum class Oversampling : uint8_t
+enum class OversamplingSetting : uint8_t
 {
-    SKIP = 0,
-    X1   = 1,
-    X2   = 2,
-    X4   = 3,
-    X8   = 4,
-    X16  = 5
+    ULTRA_LOW_POWER = 0,
+    LOW_POWER = 1,
+    STANDARD_RESOLUTION = 2,
+    HIGH_RESOLUTION = 3,
+    ULTRA_HIGH_RESOLUTION = 4
 };
 
 class Bmp280
@@ -33,23 +32,15 @@ public:
     ~Bmp280();
 
     void initialize(
-        Oversampling temp_oversampling,
-        Oversampling pressure_oversampling);
+        OversamplingSetting oversampling_setting);
 
-    void start_measurement();
-
-    bool is_measuring();
-
-    bool is_nvm_updating();
-
-    BarometerData read_measurement();
+    BarometerData read();
 
 private:
     int fd_;
-    Oversampling temperature_oversampling_;
-    Oversampling pressure_oversampling_;
 
-    // Factory calibration coefficients
+    OversamplingSetting oversampling_setting_;
+
     uint16_t dig_T1_;
     int16_t  dig_T2_;
     int16_t  dig_T3_;
@@ -65,22 +56,34 @@ private:
     int16_t  dig_P9_;
 
     int32_t t_fine_;
-    double compensate_temperature(int32_t adc_temperature);
-    double compensate_pressure(int32_t adc_pressure);
 
-    void write_register(uint8_t reg, uint8_t value);
+    void write_register(
+        uint8_t reg,
+        uint8_t value);
 
     void read_registers(
         uint8_t start_reg,
         uint8_t * buffer,
         std::size_t length);
 
+    uint16_t read_u16_le(uint8_t reg);
+    int16_t read_s16_le(uint8_t reg);
+
     void read_calibration();
 
-    int16_t read_s16_le(uint8_t reg);
-    uint16_t read_u16_le(uint8_t reg);
-    uint8_t make_ctrl_meas(uint8_t mode) const;
-    void read_raw(int32_t & adc_pressure, int32_t & adc_temperature);
+    bool is_nvm_updating();
+
+    uint8_t make_ctrl_meas() const;
+
+    void read_raw(
+        int32_t & adc_pressure,
+        int32_t & adc_temperature);
+
+    double compensate_temperature(
+        int32_t adc_temperature);
+
+    double compensate_pressure(
+        int32_t adc_pressure);
 };
 
-}  // namespace sen0140_ros2
+}

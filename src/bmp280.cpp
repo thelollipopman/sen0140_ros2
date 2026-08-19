@@ -43,8 +43,7 @@ Bmp280::~Bmp280()
 
 
 void Bmp280::initialize(
-    Oversampling temp_oversampling,
-    Oversampling pressure_oversampling)
+    OversamplingSetting oversampling_setting)
 {
     uint8_t id;
     read_registers(0xD0, &id, 1);
@@ -61,13 +60,18 @@ void Bmp280::initialize(
 
     read_calibration();
 
-    temperature_oversampling_ =
-        temp_oversampling;
+    oversampling_setting_ =
+        oversampling_setting;
 
-    pressure_oversampling_ =
-        pressure_oversampling;
-
+    // t_standby = 0.5 ms
+    // IIR filter off
+    // SPI 3-wire disabled
     write_register(0xF5, 0x00);
+
+    // Start continuous normal-mode operation.
+    write_register(
+        0xF4,
+        make_ctrl_meas());
 }
 
 
@@ -239,30 +243,54 @@ double Bmp280::compensate_pressure(
     return pressure;
 }
 
-uint8_t Bmp280::make_ctrl_meas(uint8_t mode) const
+uint8_t Bmp280::make_ctrl_meas() const
 {
-    return
-        (static_cast<uint8_t>(temperature_oversampling_) << 5) |
-        (static_cast<uint8_t>(pressure_oversampling_) << 2) |
-        mode;
-}
+    uint8_t osrs_t;
+    uint8_t osrs_p;
 
-void Bmp280::start_measurement()
-{
-    constexpr uint8_t FORCED_MODE = 0x01;
+    switch (oversampling_setting_) {
+        case OversamplingSetting::ULTRA_LOW_POWER:
+            osrs_t = 1;  // x1
+            osrs_p = 1;  // x1
+            break;
 
-    write_register(
-        0xF4,
-        make_ctrl_meas(FORCED_MODE));
-}
+        case OversamplingSetting::LOW_POWER:
+            osrs_t = 1;  // x1
+            osrs_p = 2;  // x2
+            break;
 
+        case OversamplingSetting::STANDARD_RESOLUTION:
+            osrs_t = 1;  // x1
+            osrs_p = 3;  // x4
+            break;
 
-BarometerData Bmp280::read_measurement()
-{
-    if (is_measuring()) {
-        throw std::runtime_error(
-            "BMP280 measurement is still in progress");
+        case OversamplingSetting::HIGH_RESOLUTION:
+            osrs_t = 1;  // x1
+            osrs_p = 4;  // x8
+            break;
+
+        case OversamplingSetting::ULTRA_HIGH_RESOLUTION:
+            osrs_t = 2;  // x2
+            osrs_p = 5;  // x16
+            break;
+
+        default:
+            throw std::runtime_error(
+                "Invalid BMP280 oversampling setting");
     }
+
+    constexpr uint8_t NORMAL_MODE = 0x03;
+
+    return
+        (osrs_t << 5) |
+        (osrs_p << 2) |
+        NORMAL_MODE;
+}
+
+
+
+BarometerData Bmp280::read()
+{
     int32_t adc_pressure;
     int32_t adc_temperature;
 
@@ -271,23 +299,17 @@ BarometerData Bmp280::read_measurement()
         adc_temperature);
 
     const double temperature =
-        compensate_temperature(adc_temperature);
+        compensate_temperature(
+            adc_temperature);
 
     const double pressure =
-        compensate_pressure(adc_pressure);
+        compensate_pressure(
+            adc_pressure);
 
     return {
         pressure,
         temperature
     };
-}
-
-bool Bmp280::is_measuring()
-{
-    uint8_t status;
-    read_registers(0xF3, &status, 1);
-
-    return (status & 0x08) != 0;
 }
 
 bool Bmp280::is_nvm_updating()

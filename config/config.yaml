@@ -1,0 +1,52 @@
+sen0140_node:
+  ros__parameters:
+
+    # I2C device file: check available buses using "ls /dev/i2c*" or "i2cdetect -l"
+    i2c_device: "/dev/i2c-1"                            # First I2C bus for Raspberry Pi 5
+
+    # -------------------------------------------------
+    # IMU
+    # -------------------------------------------------
+
+    # Shared parameters for both accelerometer and gyroscope
+    imu:
+      frame_id: "imu_link"
+      publish_rate: 100.0                               # Publishing rate / frequency
+
+    # ADXL345 accelerometer
+    accel:
+      address: 83 # 0x53                                # I2C address in decimal form
+      output_data_rate: 200.0                           # Output data rate: should be >= imu publish_rate
+
+      # 0 = +/-2 g
+      # 1 = +/-4 g
+      # 2 = +/-8 g
+      # 3 = +/-16 g
+      range: 3
+
+    # ITG-3200 gyroscope
+    gyro:
+      address: 104 # 0x68                               # I2C address in decimal form
+      output_data_rate: 200.0                           # Output data rate: should be >= imu publish_rate
+      dlpf_cfg: 2
+
+    # -------------------------------------------------
+    # Magnetometer
+    # -------------------------------------------------
+
+    mag:
+      address: 12 # 0x0C                                # I2C address in decimal form
+      frame_id: "imu_link"
+      publish_rate: 50.0                                # ROS2 publishing frequency
+      output_data_rate: 50.0                            # Output data rate: should be >= publish_rate
+      
+
+    # -------------------------------------------------
+    # Barometer
+    # -------------------------------------------------
+
+    baro:
+      address: 119 # 0x77                               # I2C address in decimal form
+      frame_id: "imu_link"
+      publish_rate: 10.0                                # ROS2 publishing frequency
+      oversampling_setting: 4

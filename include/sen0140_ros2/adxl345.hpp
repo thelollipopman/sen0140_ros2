@@ -33,7 +33,7 @@ public:
     ~Adxl345();
 
     void initialize(
-        int odr_hz,
+        double odr_hz,
         AccelRange range);
 
     bool is_data_ready();
@@ -42,7 +42,7 @@ public:
 
 private:
     void configure(
-        int odr_hz,
+        double odr_hz,
         AccelRange range);
 
     void write_register(
