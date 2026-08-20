@@ -22,7 +22,7 @@ sen0140_node:
     # ITG-3200 gyroscope
     gyro:
       address: 104 # 0x68                               # I2C address in decimal form
-      sample_rate_divider: 4                           # Output data rate: should be >= imu publish_rate
+      sample_rate_divider: 0                            # Output data rate: should be >= imu publish_rate
       dlpf_cfg: 2                                       # Digital low pass filter enum setting
 
     # -------------------------------------------------

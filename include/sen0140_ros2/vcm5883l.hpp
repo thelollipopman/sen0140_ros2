@@ -20,8 +20,8 @@ public:
     Vcm5883l(const std::string & i2c_device, uint8_t address = 0x0C);
     ~Vcm5883l();
 
-    void initialize(int odr_hz);
-    void configure(int odr_hz);
+    void initialize(uint8_t odr_hz);
+    void configure(uint8_t odr_hz);
 
     MagneticField read();
 

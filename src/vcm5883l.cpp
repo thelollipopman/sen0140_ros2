@@ -80,7 +80,7 @@ void Vcm5883l::read_registers(
     }
 }
 
-void Vcm5883l::initialize(int odr_hz)
+void Vcm5883l::initialize(uint8_t odr_hz)
 {
     const uint8_t chip_id = read_register(REG_CHIP_ID);
 
@@ -92,7 +92,7 @@ void Vcm5883l::initialize(int odr_hz)
     configure(odr_hz);
 }
 
-void Vcm5883l::configure(int odr_hz)
+void Vcm5883l::configure(uint8_t odr_hz)
 {
     uint8_t reg_0a;
     uint8_t reg_0b = 0x00;  // normal SET/RESET behavior
@@ -117,7 +117,7 @@ void Vcm5883l::configure(int odr_hz)
 
         default:
             throw std::invalid_argument(
-                "ODR must be 10, 50, 100, or 200 Hz");
+                "Unsupported VCM-5883L output data rate: must be one of 10, 50, 100, or 200 Hz");
     }
 
     write_register(REG_CONTROL_1, reg_0b);

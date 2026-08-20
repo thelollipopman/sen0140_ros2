@@ -68,7 +68,7 @@ public:
             std::make_unique<sen0140_ros2::Vcm5883l>(
                 i2c_device, static_cast<uint8_t>(mag_address));
 
-        magnetometer_->initialize(mag_output_data_rate);
+        magnetometer_->initialize(static_cast<uint8_t>(mag_output_data_rate));
 
         mag_publisher_ =
             create_publisher<sensor_msgs::msg::MagneticField>(
@@ -90,12 +90,11 @@ public:
         const int baro_oversampling_setting =
             get_parameter(
                 "baro.oversampling_setting").as_int();
-
-        if (baro_oversampling_setting < 0 ||
-            baro_oversampling_setting > 4)
+        
+        if (baro_oversampling_setting < 0 || baro_oversampling_setting > 4)
         {
             throw std::invalid_argument(
-                "baro.oversampling_setting must be between 0 and 4");
+                "Unsupported BMP-280 oversampling setting: oversampling_setting must be between 0 and 4");
         }
 
         const double baro_publish_rate =
@@ -160,30 +159,25 @@ public:
 
         const int gyro_sample_rate_divider =
             get_parameter("gyro.sample_rate_divider").as_int();
+        
+        if (gyro_sample_rate_divider < 0 || gyro_sample_rate_divider > 255) {
+            throw std::invalid_argument(
+                "Unsupported ITG-3200 sample rate divider: should be int between 0 and 255");
+        }
 
         const int gyro_dlpf_cfg =
             get_parameter("gyro.dlpf_cfg").as_int();
+        
+        if (gyro_dlpf_cfg < 0 || gyro_dlpf_cfg > 6) {
+            throw std::invalid_argument(
+                "Unsupported ITG-3200 dlpf_cfg: must be between 0 and 6");
+        }
 
         imu_frame_id_ =
             get_parameter("imu.frame_id").as_string();
         
         const double imu_publish_rate = 
             get_parameter("imu.publish_rate").as_double();
-
-        if (accel_range < 0 || accel_range > 3) {
-            throw std::invalid_argument(
-                "accel.range must be between 0 and 3");
-        }
-
-        if (gyro_dlpf_cfg < 0 || gyro_dlpf_cfg > 6) {
-            throw std::invalid_argument(
-                "gyro.dlpf_cfg must be between 0 and 6");
-        }
-
-        if (gyro_sample_rate_divider < 0 || gyro_sample_rate_divider > 255) {
-            throw std::invalid_argument(
-                "ITG-3200 sample rate is not exactly achievable");
-        }
 
         accelerometer_ =
             std::make_unique<sen0140_ros2::Adxl345>(
@@ -195,7 +189,7 @@ public:
 
         accelerometer_->initialize(
             accel_output_data_rate,
-            static_cast<sen0140_ros2::AccelRange>(accel_range)
+            static_cast<uint8_t>(accel_range)
         );
 
         gyroscope_->initialize(

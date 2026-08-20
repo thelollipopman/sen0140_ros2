@@ -15,14 +15,6 @@ struct Acceleration
     double z;
 };
 
-enum class AccelRange : uint8_t
-{
-    G2  = 0,
-    G4  = 1,
-    G8  = 2,
-    G16 = 3
-};
-
 class Adxl345
 {
 public:
@@ -34,7 +26,7 @@ public:
 
     void initialize(
         double odr_hz,
-        AccelRange range);
+        uint8_t range);
 
     bool is_data_ready();
 
@@ -43,7 +35,7 @@ public:
 private:
     void configure(
         double odr_hz,
-        AccelRange range);
+        uint8_t range);
 
     void write_register(
         uint8_t reg,

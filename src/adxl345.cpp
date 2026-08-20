@@ -6,6 +6,9 @@
 #include <unistd.h>
 
 #include <stdexcept>
+#include <array>
+#include <algorithm>
+#include <cmath>
 
 namespace sen0140_ros2
 {
@@ -129,7 +132,7 @@ void Adxl345::read_registers(
 
 void Adxl345::initialize(
     double odr_hz,
-    AccelRange range)
+    uint8_t range)
 {
     const uint8_t device_id =
         read_register(REG_DEVID);
@@ -139,6 +142,11 @@ void Adxl345::initialize(
             "Unexpected ADXL345 device ID");
     }
 
+    if (!(range == 2 || range == 4 || range == 8 || range == 16)) {
+        throw std::invalid_argument(
+            "Unsupported ADXL345 range: must be one of 2, 4, 6 or 8");
+    };
+
     configure(
         odr_hz,
         range);
@@ -147,62 +155,47 @@ void Adxl345::initialize(
 
 void Adxl345::configure(
     double odr_hz,
-    AccelRange range)
+    uint8_t range)
 {
-    uint8_t rate_code;
 
-    if (odr_hz == 3200.0) {
-        rate_code = 0x0F;
-    }
-    else if (odr_hz == 1600.0) {
-        rate_code = 0x0E;
-    }
-    else if (odr_hz == 800.0) {
-        rate_code = 0x0D;
-    }
-    else if (odr_hz == 400.0) {
-        rate_code = 0x0C;
-    }
-    else if (odr_hz == 200.0) {
-        rate_code = 0x0B;
-    }
-    else if (odr_hz == 100.0) {
-        rate_code = 0x0A;
-    }
-    else if (odr_hz == 50.0) {
-        rate_code = 0x09;
-    }
-    else if (odr_hz == 25.0) {
-        rate_code = 0x08;
-    }
-    else if (odr_hz == 12.5) {
-        rate_code = 0x07;
-    }
-    else if (odr_hz == 6.25) {
-        rate_code = 0x06;
-    }
-    else if (odr_hz == 3.13) {
-        rate_code = 0x05;
-    }
-    else if (odr_hz == 1.56) {
-        rate_code = 0x04;
-    }
-    else if (odr_hz == 0.78) {
-        rate_code = 0x03;
-    }
-    else if (odr_hz == 0.39) {
-        rate_code = 0x02;
-    }
-    else if (odr_hz == 0.20) {
-        rate_code = 0x01;
-    }
-    else if (odr_hz == 0.10) {
-        rate_code = 0x00;
-    }
-    else {
+    struct OdrSetting
+    {
+        double hz;
+        uint8_t code;
+    };
+
+    constexpr std::array<OdrSetting, 16> ODR_SETTINGS = {{
+        {0.10,   0x00},
+        {0.20,   0x01},
+        {0.39,   0x02},
+        {0.78,   0x03},
+        {1.56,   0x04},
+        {3.13,   0x05},
+        {6.25,   0x06},
+        {12.5,   0x07},
+        {25.0,   0x08},
+        {50.0,   0x09},
+        {100.0,  0x0A},
+        {200.0,  0x0B},
+        {400.0,  0x0C},
+        {800.0,  0x0D},
+        {1600.0, 0x0E},
+        {3200.0, 0x0F}
+    }};
+
+    auto it = std::find_if(
+        ODR_SETTINGS.begin(),
+        ODR_SETTINGS.end(),
+        [odr_hz](const OdrSetting & setting) {
+            return std::abs(odr_hz - setting.hz) < 1e-3;
+        });
+
+    if (it == ODR_SETTINGS.end()) {
         throw std::invalid_argument(
-            "Unsupported ADXL345 output data rate");
-    }
+            "Unsupported ADXL345 output data rate: must be one of 6.25, 12.5, 25, 50, 100, 200, 400, 800, 1600, 3200"
+    );};
+
+    const uint8_t rate_code = it->code;
 
     // Place device in standby while configuring.
     write_register(
