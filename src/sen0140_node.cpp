@@ -43,7 +43,7 @@ public:
         declare_parameter<int>("accel.range", 3);
 
         declare_parameter<int>("gyro.address", 0x68);
-        declare_parameter<double>("gyro.output_data_rate", 200.0);
+        declare_parameter<int>("gyro.sample_rate_divider", 4);
         declare_parameter<int>("gyro.dlpf_cfg", 2);
         
         
@@ -158,8 +158,8 @@ public:
         const int gyro_address =
             get_parameter("gyro.address").as_int();
 
-        const double gyro_output_data_rate =
-            get_parameter("gyro.output_data_rate").as_double();
+        const int gyro_sample_rate_divider =
+            get_parameter("gyro.sample_rate_divider").as_int();
 
         const int gyro_dlpf_cfg =
             get_parameter("gyro.dlpf_cfg").as_int();
@@ -180,6 +180,11 @@ public:
                 "gyro.dlpf_cfg must be between 0 and 6");
         }
 
+        if (gyro_sample_rate_divider < 0 || gyro_sample_rate_divider > 255) {
+            throw std::invalid_argument(
+                "ITG-3200 sample rate is not exactly achievable");
+        }
+
         accelerometer_ =
             std::make_unique<sen0140_ros2::Adxl345>(
                 i2c_device, static_cast<uint8_t>(accel_address));
@@ -190,18 +195,19 @@ public:
 
         accelerometer_->initialize(
             accel_output_data_rate,
-            static_cast<sen0140_ros2::AccelRange>(
-                accel_range));
+            static_cast<sen0140_ros2::AccelRange>(accel_range)
+        );
 
         gyroscope_->initialize(
-            gyro_output_data_rate,
-            static_cast<uint8_t>(
-                gyro_dlpf_cfg));
+            static_cast<uint8_t>(gyro_sample_rate_divider),
+            static_cast<uint8_t>(gyro_dlpf_cfg)
+        );
 
         imu_publisher_ =
             create_publisher<sensor_msgs::msg::Imu>(
                 "imu",
-                rclcpp::SensorDataQoS());
+                rclcpp::SensorDataQoS()
+            );
         
         const auto imu_period =
             std::chrono::duration<double>(1.0 / imu_publish_rate);

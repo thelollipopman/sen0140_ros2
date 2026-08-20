@@ -25,7 +25,7 @@ public:
     ~Itg3200();
 
     void initialize(
-        double sample_rate_hz,
+        uint8_t sample_rate_divider,
         uint8_t dlpf_cfg);
 
     bool is_data_ready();
@@ -36,7 +36,7 @@ public:
 
 private:
     void configure(
-        double sample_rate_hz,
+        uint8_t sample_rate_divider,
         uint8_t dlpf_cfg);
 
     void write_register(

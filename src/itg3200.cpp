@@ -131,7 +131,7 @@ void Itg3200::read_registers(
 
 
 void Itg3200::initialize(
-    double sample_rate_hz,
+    uint8_t sample_rate_divider,
     uint8_t dlpf_cfg)
 {
     /*
@@ -153,13 +153,13 @@ void Itg3200::initialize(
     }
 
     configure(
-        sample_rate_hz,
+        sample_rate_divider,
         dlpf_cfg);
 }
 
 
 void Itg3200::configure(
-    double sample_rate_hz,
+    uint8_t sample_rate_divider,
     uint8_t dlpf_cfg)
 {
     if (dlpf_cfg > 6) {
@@ -210,36 +210,10 @@ void Itg3200::configure(
      * DLPF_CFG = 0 -> 8000 Hz
      * DLPF_CFG = 1..6 -> 1000 Hz
      */
-    const int internal_rate =
-        (dlpf_cfg == 0)
-        ? 8000
-        : 1000;
-
-    if (sample_rate_hz <= 0 ||
-        sample_rate_hz > internal_rate)
-    {
-        throw std::invalid_argument(
-            "Invalid ITG-3200 sample rate");
-    }
-
-    /*
-     * Fsample =
-     * Finternal / (SMPLRT_DIV + 1)
-     */
-    const int divider =
-        (internal_rate / sample_rate_hz) - 1;
-
-    if (divider < 0 ||
-        divider > 255 ||
-        internal_rate / (divider + 1) != sample_rate_hz)
-    {
-        throw std::invalid_argument(
-            "ITG-3200 sample rate is not exactly achievable");
-    }
 
     write_register(
         REG_SMPLRT_DIV,
-        static_cast<uint8_t>(divider));
+        sample_rate_divider);
 
     /*
      * Enable RAW_RDY status.
